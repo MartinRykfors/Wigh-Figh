@@ -1,5 +1,5 @@
-(ns wigh-figh.pattern)
-
+(ns wigh-figh.pattern
+  (:use [overtone.live :only [apply-by]]))
 
 (defn- pat-gen [start dur xs]
   (let [num-xs (count xs)
@@ -26,3 +26,13 @@
    (map #(if (vector? %) (vec (rot-rec %)) %) (vec (rot xs))))
   ([xs n]
    (nth (iterate rot-rec xs) n)))
+
+(defn sequencer [time num-beats measure-length gen]
+  (let [next-time (+ measure-length time)]
+    (doseq [[seq-gen trigger-f] @gen]
+     (try 
+       (let [trigger-times (take-while #(< % num-beats) (seq-gen num-beats))]
+         (doseq [trig-time trigger-times]
+           (apply-by (+ time (* (/ measure-length num-beats) trig-time)) trigger-f)))
+       (catch Exception e (prn "caught exception from sequence gen"))))
+    (apply-by next-time #'sequencer [next-time num-beats measure-length gen])))
