@@ -78,6 +78,3 @@
     (are [x y] (= x y)
          [[3 [0 3]] 2 [1 0 0]]
          (rot-rec [2 [0 0 1] [3 [0 3]]] 2))))
-
-(deftest pattern-selection
-  )

@@ -27,8 +27,8 @@
   [xs start dur]
   (let [index (rand-int (count xs))
         choice (-> xs
-                    (vec)
-                    (nth index))]
+                   (vec)
+                   (nth index))]
     (pattern-unit choice start dur)))
 
 (defmethod pattern-unit clojure.lang.PersistentArrayMap
