@@ -1,19 +1,43 @@
 (ns wigh-figh.pattern
   (:use [overtone.live :only [apply-by]]))
 
-(defn- pat-gen [start dur xs]
+(defmulti pattern-unit (fn [x start dur] (class x)))
+
+(defmethod pattern-unit java.lang.Long
+  [x start dur]
+  (->> x
+       (range)
+       (map #(/ % x))
+       (map #(* % dur))
+       (map #(+ start %))
+       (vec)))
+
+(defmethod pattern-unit clojure.lang.PersistentVector
+  [xs start dur]
   (let [num-xs (count xs)
         step-length (/ dur num-xs)
         start-times (map #(+ start (* step-length %)) (range num-xs))
-        x-times (map vector start-times (repeat num-xs step-length) xs)
-        zs (map #(zipmap [:start :dur :pat] %) x-times)]
-    (mapcat #(if (vector? (% :pat))
-               (pat-gen (% :start) (% :dur) (% :pat))
-               (cond (= 1 (% :pat)) (list (% :start))
-                     (>= 0 (% :pat)) (list)
-                     :else (pat-gen (% :start) (% :dur) (repeat (% :pat) 1)) )) zs)))
+        x-times (map vector start-times xs)
+        zs (map #(zipmap [:start :pat] %) x-times)]
+    (mapcat #(pattern-unit (% :pat) (% :start) step-length) zs)))
 
-(defn pattern [pat] #(pat-gen 0 % pat))
+(defmethod pattern-unit nil [_ _ _] [])
+
+(defmethod pattern-unit clojure.lang.PersistentHashSet
+  [xs start dur]
+  (let [index (rand-int (count xs))
+        choice (-> xs
+                    (vec)
+                    (nth index))]
+    (pattern-unit choice start dur)))
+
+(defmethod pattern-unit clojure.lang.PersistentArrayMap
+  [xs start dur]
+  (-> (repeat (:x xs) [(:p xs)])
+      (vec)
+      (pattern-unit start dur)))
+
+(defn pattern [pat] #(pattern-unit pat 0 % ))
 
 (defn rot
   ([xs]
