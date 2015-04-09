@@ -18,7 +18,10 @@
 
 (defn transition-state! []
   (swap! animation-state #(assoc-in % [:progress] (float 0.0)))
-  (swap! animation-state #(update-in % [:start] (fn [x] (+ x (float 1.0))))))
+  (if (> 2000 (:start @animation-state))
+    (swap! animation-state #(update-in % [:start] (fn [x] (+ x (float 1.0)))))
+    (swap! animation-state #(assoc-in % [:start] (float 0.0)))))
+
 
 (defn reload-shader! []
   (reset! sh (q/load-shader (.getPath (clojure.java.io/resource "laser.frag"))))
