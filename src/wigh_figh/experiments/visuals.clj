@@ -1,7 +1,7 @@
 (ns wigh-figh.experiments.visuals
   (:use [wigh-figh.pattern]
         [overtone.live])
-  (:require [wigh-figh.visuals.gridshift :as viz]))
+  (:require [wigh-figh.visuals.laser :as viz]))
 
 (viz/transition-state!)
 
@@ -14,5 +14,7 @@
 
 (def generator (atom []))
 (reset! generator
-        [[(pattern [1 [1 0 0 1] [ 0 1 0 1] 1 ]) #(do (kick) (viz/transition-state!))]])
-(sequencer (+ (now) 1000) 4 2000 generator)
+        [[(pattern [1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0 1 0 1 1 0 0 1 0 0 1 0 0 0 0 0 0 ])
+          #(do (kick) (viz/transition-state!))]])
+(sequencer (+ (now) 1000) 8 4000 generator)
+(stop)
