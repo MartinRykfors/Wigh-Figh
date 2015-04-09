@@ -63,6 +63,9 @@ void main()
     z *= rot;
     vec3 coly = col2 / abs(z.y + 0.5*sin(quantize(z.x, 1.)*2.+animTime*100.) * osc) / 20.;
     vec3 colt = vec3(1.) / length(z) / (5. + 4.*sin(time*100.) * osc);
+    vec2 uv = gl_FragCoord.xy / size;
+    float vig = 1. - pow(4.*(uv.x - .5)*(uv.x - .5), 3.);
+    vig *= 1. - pow(4.*(uv.y - .5)*(uv.y - .5), 3.);
 
-    gl_FragColor = vec4(sqrt(colx) + colt + sqrt(coly),1.);
+    gl_FragColor = vec4((sqrt(colx) + colt + sqrt(coly))*vig,1.);
 }

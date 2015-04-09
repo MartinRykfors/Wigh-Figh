@@ -37,8 +37,8 @@
   (advance-time!))
 
 (q/defsketch sketch
-  :title "Lasers!!!"
+  :title ""
   :setup setup
   :draw draw
   :renderer :p2d
-  :size [800 600]) 
+  :size [1000 600]) 
