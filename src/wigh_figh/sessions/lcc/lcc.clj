@@ -18,15 +18,14 @@
       (* env (sin-osc (lin-lin env 0 1 end-freq start-freq))))))
 
 (defsynth kick [amp 0.5]
-  (->> [[0.01 3000 200]
-        [0.3 170 70]
-        [0.6 80 20]]
-       (map #(apply chirp %))
-       (mix)
-       (#(* (- 1 (detect-silence % 0.0001 0.1 FREE)) %))
-       (* amp)
-       (out [0 1])))
-
+  (let [sig (->> [[0.01 3000 200]
+                  [0.3 170 70]
+                  [0.6 80 20]]
+                 (map #(apply chirp %))
+                 (mix)
+                 (* amp))
+        _ (detect-silence sig 0.0001 0.1 FREE)]
+    (out [0 1] sig)))
 
 
 
