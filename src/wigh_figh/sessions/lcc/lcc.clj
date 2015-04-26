@@ -1,10 +1,3 @@
-;; todo
-;; fix sexp fu (thought I did that or was it at work?)
-;; fix rounding error in viz
-;; fm synth needs amp parameter
-;; probably not going to bother with the mixers for now
-;; practice building the fm synth
-;; practice designing the hihat and snare
 (ns wigh-figh.sessions.lcc
   (:use [overtone.live]
         [wigh-figh.fader]
