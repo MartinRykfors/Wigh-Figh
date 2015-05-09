@@ -1,55 +1,76 @@
 (ns wigh-figh.pattern
   (:use [overtone.live :only [apply-by]]))
 
-(defmulti pattern-unit (fn [x start dur] (class x)))
+(defprotocol Pattern-gen
+  (pattern-unit [this start duration measure-index])
+  (pattern-modifier [this]))
 
-(defmethod pattern-unit java.lang.Long
-  [x start dur]
-  (->> x
+(defn pattern [pat] #(pattern-unit (pattern-modifier pat) 0 1 %))
+
+(extend-type java.lang.Long
+  Pattern-gen
+  (pattern-unit [x start duration _]
+    (->> x
        (range)
        (map #(/ % x))
-       (map #(* % dur))
+       (map #(* % duration))
        (map #(+ start %))
        (vec)))
+  (pattern-modifier [x] [x]))
 
-(defmethod pattern-unit clojure.lang.PersistentVector
-  [xs start dur]
-  (let [num-xs (count xs)
-        step-length (/ dur num-xs)
+(extend-type clojure.lang.PersistentVector
+  Pattern-gen
+  (pattern-unit [xs start duration measure-index]
+    (let [num-xs (count xs)
+        step-length (/ duration num-xs)
         start-times (map #(+ start (* step-length %)) (range num-xs))
         x-times (map vector start-times xs)
         zs (map #(zipmap [:start :pat] %) x-times)]
-    (mapcat #(pattern-unit (% :pat) (% :start) step-length) zs)))
+    (mapcat #(pattern-unit (% :pat) (% :start) step-length measure-index) zs)))
+  (pattern-modifier [xs] (vector (vec (mapcat pattern-modifier xs)))))
 
-(defmethod pattern-unit nil [_ _ _] [])
+(extend-type nil
+  Pattern-gen
+  (pattern-unit [_ _ _ _] [])
+  (pattern-modifier [_] nil))
 
-(defmethod pattern-unit clojure.lang.PersistentHashSet
-  [xs start dur]
-  (let [index (rand-int (count xs))
+(extend-type clojure.lang.PersistentHashSet
+  Pattern-gen
+  (pattern-unit [xs start duration measure-index]
+    (let [index (rand-int (count xs))
         choice (-> xs
                    (vec)
                    (nth index))]
-    (pattern-unit choice start dur)))
+      (pattern-unit choice start duration measure-index)))
+  (pattern-modifier [xs] (set (map pattern-modifier xs))))
 
-(defmethod pattern-unit clojure.lang.PersistentArrayMap
-  [xs start dur]
-  (-> (repeat (:x xs) [(:p xs)])
-      (vec)
-      (pattern-unit start dur)))
+(extend-type clojure.lang.PersistentArrayMap
+  Pattern-gen
+  (pattern-unit [_ _ _ _] [])
+  (pattern-modifier [xs]
+    (let [{:keys [x p]} xs]
+      (repeat x (flatten (pattern-modifier p))))))
 
-(defn pattern [pat] #(pattern-unit pat 0 % ))
+(extend-type clojure.lang.PersistentList
+  Pattern-gen
+  (pattern-unit [xs start duration measure-index]
+    (let [length (count xs)
+          choice (nth xs measure-index)]
+      (println "mi" measure-index)
+      (println "ln" length)
+      (println "ch" choice)
+      (println "xs" xs)
+      (pattern-unit choice start duration (quot measure-index length))))
+  (pattern-modifier [xs] (list (mapcat pattern-modifier xs))))
 
-(defn rot
-  ([xs]
-   (conj (vec (rest xs)) (first xs)))
-  ([xs n]
-   (nth (iterate rot xs) n)))
+(extend-type clojure.lang.LazySeq
+  Pattern-gen
+  (pattern-unit [xs start duration measure-index]
+    (pattern-unit (list xs) start duration measure-index))
+  (pattern-modifier [xs] (list (pattern-modifier xs))))
 
-(defn rot-rec
-  ([xs]
-   (map #(if (vector? %) (vec (rot-rec %)) %) (vec (rot xs))))
-  ([xs n]
-   (nth (iterate rot-rec xs) n)))
+
+(type (map inc [0 1 2]))
 
 (defn sequencer [time num-beats measure-length gen]
   (let [next-time (+ measure-length time)]
