@@ -1,5 +1,6 @@
 (ns wigh-figh.pattern
-  (:use [overtone.live :only [apply-by]]))
+  ;(:use [overtone.live :only [apply-by]])
+  )
 
 (defprotocol Pattern-gen
   (pattern-unit [this start duration measure-index])
@@ -18,7 +19,7 @@
        (vec)))
   (pattern-modifier [x] [x]))
 
-(extend-type clojure.lang.PersistentVector
+(extend-type clojure.lang.Sequential
   Pattern-gen
   (pattern-unit [xs start duration measure-index]
     (let [num-xs (count xs)
@@ -44,40 +45,24 @@
       (pattern-unit choice start duration measure-index)))
   (pattern-modifier [xs] (set (map pattern-modifier xs))))
 
-(extend-type clojure.lang.PersistentArrayMap
+(defrecord rep [n pattern]
   Pattern-gen
   (pattern-unit [_ _ _ _] [])
-  (pattern-modifier [xs]
-    (let [{:keys [x p]} xs]
-      (repeat x (flatten (pattern-modifier p))))))
+  (pattern-modifier [this] (mapcat pattern-modifier (repeat (:n this) (:pattern this)))))
 
-(extend-type clojure.lang.PersistentList
+(defrecord choice [patterns]
   Pattern-gen
-  (pattern-unit [xs start duration measure-index]
-    (let [length (count xs)
-          choice (nth xs measure-index)]
-      (println "mi" measure-index)
-      (println "ln" length)
-      (println "ch" choice)
-      (println "xs" xs)
-      (pattern-unit choice start duration (quot measure-index length))))
-  (pattern-modifier [xs] (list (mapcat pattern-modifier xs))))
+  (pattern-unit [_ _ _ _] [])
+  (pattern-modifier [this]
+    (let [pattern (nth (:patterns this) (rand-int (count (:patterns this))))]
+      (pattern-modifier pattern))))
 
-(extend-type clojure.lang.LazySeq
-  Pattern-gen
-  (pattern-unit [xs start duration measure-index]
-    (pattern-unit (list xs) start duration measure-index))
-  (pattern-modifier [xs] (list (pattern-modifier xs))))
-
-
-(type (map inc [0 1 2]))
-
-(defn sequencer [time num-beats measure-length gen]
-  (let [next-time (+ measure-length time)]
-    (doseq [[seq-gen trigger-f] @gen]
-     (try 
-       (let [trigger-times (take-while #(< % num-beats) (seq-gen num-beats))]
-         (doseq [trig-time trigger-times]
-           (apply-by (+ time (* (/ measure-length num-beats) trig-time)) trigger-f)))
-       (catch Exception e (prn "caught exception from sequence gen"))))
-    (apply-by next-time #'sequencer [next-time num-beats measure-length gen])))
+;; (defn sequencer [time num-beats measure-length gen]
+;;   (let [next-time (+ measure-length time)]
+;;     (doseq [[seq-gen trigger-f] @gen]
+;;      (try 
+;;        (let [trigger-times (take-while #(< % num-beats) (seq-gen num-beats))]
+;;          (doseq [trig-time trigger-times]
+;;            (apply-by (+ time (* (/ measure-length num-beats) trig-time)) trigger-f)))
+;;        (catch Exception e (prn "caught exception from sequence gen"))))
+;;     (apply-by next-time #'sequencer [next-time num-beats measure-length gen])))
