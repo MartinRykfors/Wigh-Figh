@@ -21,7 +21,7 @@ vec3 background(vec3 dir){
     vec3 nadir = vec3(.1,.3,.5);
     vec3 ground = vec3(.1,.6,.2);
     vec3 sky = vec3(1.);
-    vec3 zenith = vec3(.0, .0, .3);
+    vec3 zenith = vec3(.0, .0, .2);
     vec3 col = f < 0. ? mix(nadir, ground, f+1.) : mix(sky, zenith, pow(f,.25));
     return col * (5.+sin(a*2.))/6.*2.5;
 }
@@ -48,20 +48,22 @@ mat3 rotateY(float a){
 }
 
 mat3 rotation;
+float jitter;
 
 vec4 map(vec3 p){
-    float e = 0.1;
+    float e = 0.2;
     // float a = p.z*sin(atime*3.)*0.6;
     // p.xy *= mat2(cos(a), -sin(a), sin(a), cos(a));
     for (int i = 0; i < 5; i++){
-        p = abs(p*rotation);
+        p = abs(p*rotation + vec3(0.1, .0, .0));
         //p.xyz = p.zyx;
-        p.y -= .5;
-        //p.x -= e*2.;
-        p.z -= e;
-        e*=sin(time*80.)*2.0*pow((1.-fract(time)),4.);
+        p.y -= .8;
+        p.x -= .06;
+        p.z -= jitter;
+        p.xy = p.yx;
+        //e+=sin(time*80.)*.1*pow((1.-fract(time)),5.);
     }
-    return box(p, .7);
+    return box(p, .6);
 }
 
 vec3 normal(vec3 pos)
@@ -74,25 +76,21 @@ vec3 normal(vec3 pos)
 	return normalize(nor);
 }
 
-float ao(vec3 pos, vec3 n){
-    float d = 0.09;
-    float sum = 0.;
-    float fac = 1.;
-    for (int i = 1; i < 5; i++){
-        sum += d*float(i) - map(pos + n*d*float(i)).x/fac;
-        fac *= 2.;
-    }
-    return 1.-sum;
-}
+vec3 glowColor = vec3(2.9, 1.4, 1.2);
 
 vec3 render(Ray ray){
     float dist = 0.;
     vec3 pos;
+    float minDist = 1000.;
+    float curMap;
     for (int i = 0; i < 60; i++){
         pos = ray.org + dist*ray.dir;
-        dist+=map(pos).x;
+        curMap = map(pos).x;
+        dist+=curMap;
+        minDist = min(minDist,curMap);
     }
     vec4 m = map(pos);
+    float flash = 1.-fract(atime);
     if (m.x < 0.01){
         vec3 n = normal(pos);
         vec3 l = normalize(vec3(1.,2.,5.));
@@ -102,20 +100,21 @@ vec3 render(Ray ray){
         float dx = m.y;
         float dy = m.z;
         float dz = m.w;
-        float start = 0.02;
-        float end = 0.023;
+        float start = 0.00;
+        float end = 0.09*flash + 0.02;
         float f = smoothstep(start, end, abs(dx-dy));
         f *= smoothstep(start, end, abs(dx-dz));
         f *= smoothstep(start, end, abs(dz-dy));
         f = 1. - f;
-        // float flash = pow((1.+sin(time*20.))/2.,10.);
-        float a = ao(pos, n);
         float rf = 1.-abs(dot(ray.dir, n));
-        return diffuse*a*(1.-rf) + 0.2*a + f + refl*rf; 
+        rf = pow(rf,3.);
+        flash = sqrt(flash);
+        return diffuse*(1.-rf)*0.4 + flash*f*glowColor*2.5 + refl*rf*1.3; 
     }
+    float glow = 0.1/minDist;
 
-    //return vec3(0.);
-    return background(ray.dir)*0.3;
+    flash *=flash;
+    return background(ray.dir)*0.2 + glow * glowColor * flash;
 }
 
 Ray createRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspect)
@@ -134,7 +133,7 @@ Ray createRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspec
 
 void main(){
     vec2 p = gl_FragCoord.xy / size;
-	vec3 cameraPos = vec3(5.*sin(time/3.),5.*cos(time/3.),-3.);
+	vec3 cameraPos = vec3(5.*sin(time/3.),5.*cos(time/3.),-4.*sin(time/8.));
 	vec3 lookAt = vec3(0.);
 	vec3 up = vec3(0.,0.,1.);
 	float aspect = size.x/size.y;
@@ -143,6 +142,7 @@ void main(){
     t += 1. - exp(-f*9.);
     atime = t;
     rotation = rotateX(atime*1.9)*rotateY(atime*1.4);
+    jitter = sin(time*80.)*.1*pow((1.-fract(time)),5.);
 	Ray ray = createRay(cameraPos, lookAt, up, p, 90., aspect);
     vec3 col = render(ray);
     float vig = p.x*(1.-p.x)*p.y*(1.-p.y)*4.;
