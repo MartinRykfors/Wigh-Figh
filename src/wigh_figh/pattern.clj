@@ -2,60 +2,61 @@
   ;(:use [overtone.live :only [apply-by]])
   )
 
+(defprotocol Pattern-unit
+  (trigger-times [this start duration]))
+
+(defprotocol Pattern-expander
+  (expand [this measure-index]))
+
 (defprotocol Pattern-gen
   (pattern-unit [this start duration measure-index])
   (pattern-modifier [this]))
 
-(defn pattern [pat] #(pattern-unit (pattern-modifier pat) 0 1 %))
+(defn pattern [pat] #(trigger-times (expand pat %) 0 1))
 
 (extend-type java.lang.Long
-  Pattern-gen
-  (pattern-unit [x start duration _]
+  Pattern-unit
+  (trigger-times [x start duration]
     (->> x
        (range)
        (map #(/ % x))
        (map #(* % duration))
        (map #(+ start %))
        (vec)))
-  (pattern-modifier [x] [x]))
+  Pattern-expander
+  (expand [x _] [x]))
 
 (extend-type clojure.lang.Sequential
-  Pattern-gen
-  (pattern-unit [xs start duration measure-index]
+  Pattern-unit
+  (trigger-times [xs start duration]
     (let [num-xs (count xs)
         step-length (/ duration num-xs)
         start-times (map #(+ start (* step-length %)) (range num-xs))
         x-times (map vector start-times xs)
         zs (map #(zipmap [:start :pat] %) x-times)]
-    (mapcat #(pattern-unit (% :pat) (% :start) step-length measure-index) zs)))
-  (pattern-modifier [xs] (vector (vec (mapcat pattern-modifier xs)))))
+    (mapcat #(trigger-times (% :pat) (% :start) step-length) zs)))
+  Pattern-expander
+  (expand [xs measure-index] (vector (vec (mapcat #(expand % measure-index) xs)))))
 
 (extend-type nil
-  Pattern-gen
-  (pattern-unit [_ _ _ _] [])
-  (pattern-modifier [_] nil))
-
-(extend-type clojure.lang.PersistentHashSet
-  Pattern-gen
-  (pattern-unit [xs start duration measure-index]
-    (let [index (rand-int (count xs))
-        choice (-> xs
-                   (vec)
-                   (nth index))]
-      (pattern-unit choice start duration measure-index)))
-  (pattern-modifier [xs] (set (map pattern-modifier xs))))
+  Pattern-unit
+  (pattern-unit [_ _ _] [])
+  Pattern-expander
+  (pattern-modifier [_ _] []))
 
 (defrecord rep [n pattern]
-  Pattern-gen
-  (pattern-unit [_ _ _ _] [])
-  (pattern-modifier [this] (mapcat pattern-modifier (repeat (:n this) (:pattern this)))))
+  Pattern-expander
+  (expand [this measure-index]
+    (mapcat
+     #(expand % measure-index)
+     (repeat (:n this) (:pattern this)))))
 
 (defrecord choice [patterns]
-  Pattern-gen
-  (pattern-unit [_ _ _ _] [])
-  (pattern-modifier [this]
+  Pattern-expander
+  (expand [this m-i]
     (let [pattern (nth (:patterns this) (rand-int (count (:patterns this))))]
-      (pattern-modifier pattern))))
+      (expand pattern m-i))))
+
 
 ;; (defn sequencer [time num-beats measure-length gen]
 ;;   (let [next-time (+ measure-length time)]
