@@ -82,4 +82,39 @@
   (testing "Expanding a random choice yields one of the choices"
     (are [xs] (some #{(expand (->choice xs) 0)} (map #(expand % 0) xs)  )
          [1]
-         [1 2])))
+         [1 2]))
+  (testing "Accessing indexed patterns by measure-index"
+    (are [x y index] (= (expand x 0) (expand (->indexed y) index) )
+         1
+         [1] 0
+
+         1
+         [2 1] 1
+
+         3
+         [1 2 3] 2
+
+         1
+         [1 2 3] 3))
+  (testing "Accessing nested indexed patterns"
+    (are [x y index] (= (expand x 0) (expand y index))
+         1
+         (i (i 1 2) 3) 0
+
+         3
+         (i (i 1 2) 3) 1
+
+         2
+         (i (i 1 2) 3) 2
+
+         3
+         (i (i 1 2) 3) 3
+
+         1
+         (i (i 1 2) 3) 4
+         ))
+  (testing "Expanding empty things yields non-event"
+    (are [x] (= x [[]])
+         (expand (i) 0)
+
+         (expand (c) 0))))
