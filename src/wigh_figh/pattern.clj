@@ -38,7 +38,7 @@
   Pattern-unit
   (trigger-times [_ _ _] [])
   Pattern-expander
-  (expand [_ _] nil))
+  (expand [_ _] [nil]))
 
 (defrecord rep [n pattern]
   Pattern-expander
