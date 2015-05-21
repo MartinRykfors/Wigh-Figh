@@ -1,3 +1,5 @@
+# Wigh Figh
+
                           .:+oyhdmmmmmddhso/-`                         
                       :ohNMMMMMMMMMMMMMMMMMMMMmy+-                     
                   `/hNMMMMMmhs+/:--..--:/oydNMMMMMNs:                  
@@ -28,7 +30,6 @@
                      `/sdMMMN`            :MMMNho:                     
                           ./:              /:.                         
 
-# Wigh Figh
 
 My Overtone live-coding environment.
 Includes functionality for
