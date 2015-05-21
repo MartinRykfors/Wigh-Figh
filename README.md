@@ -42,3 +42,5 @@ Includes functionality for
 Copyright © 2014 - 2015 Martin Rykfors
 
 Distributed under the Gnu General Public License version 3
+
+![faders and fragments](screenshot.png)
