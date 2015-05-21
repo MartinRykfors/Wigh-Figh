@@ -1,62 +1,72 @@
-(ns wigh-figh.pattern
-  (:use [overtone.live :only [apply-by]]))
+(ns wigh-figh.pattern)
 
-(defmulti pattern-unit (fn [x start dur] (class x)))
+(defprotocol Pattern-unit
+  (trigger-times [this start duration]))
 
-(defmethod pattern-unit java.lang.Long
-  [x start dur]
-  (->> x
-       (range)
-       (map #(/ % x))
-       (map #(* % dur))
-       (map #(+ start %))
-       (vec)))
+(defprotocol Pattern-expander
+  (expand [this measure-index]))
 
-(defmethod pattern-unit clojure.lang.PersistentVector
-  [xs start dur]
-  (let [num-xs (count xs)
-        step-length (/ dur num-xs)
-        start-times (map #(+ start (* step-length %)) (range num-xs))
-        x-times (map vector start-times xs)
-        zs (map #(zipmap [:start :pat] %) x-times)]
-    (mapcat #(pattern-unit (% :pat) (% :start) step-length) zs)))
+(defn pattern [pat] #(trigger-times (expand pat %) 0 1))
 
-(defmethod pattern-unit nil [_ _ _] [])
+(extend-type java.lang.Long
+  Pattern-unit
+  (trigger-times [x start duration]
+    (->> x
+         (range)
+         (map #(/ % x))
+         (map #(* % duration))
+         (map #(+ start %))
+         (vec)))
+  Pattern-expander
+  (expand [x _] [x]))
 
-(defmethod pattern-unit clojure.lang.PersistentHashSet
-  [xs start dur]
-  (let [index (rand-int (count xs))
-        choice (-> xs
-                   (vec)
-                   (nth index))]
-    (pattern-unit choice start dur)))
+(extend-type clojure.lang.Sequential
+  Pattern-unit
+  (trigger-times [xs start duration]
+    (let [num-xs (count xs)
+          step-length (/ duration num-xs)
+          start-times (map #(+ start (* step-length %)) (range num-xs))
+          x-times (map vector start-times xs)
+          zs (map #(zipmap [:start :pat] %) x-times)]
+      (mapcat #(trigger-times (% :pat) (% :start) step-length) zs)))
+  Pattern-expander
+  (expand [xs measure-index] (vector (vec (mapcat #(expand % measure-index) xs)))))
 
-(defmethod pattern-unit clojure.lang.PersistentArrayMap
-  [xs start dur]
-  (-> (repeat (:x xs) [(:p xs)])
-      (vec)
-      (pattern-unit start dur)))
+(extend-type nil
+  Pattern-unit
+  (trigger-times [_ _ _] [])
+  Pattern-expander
+  (expand [_ _] [nil]))
 
-(defn pattern [pat] #(pattern-unit pat 0 % ))
+(defrecord rep [n pattern]
+  Pattern-expander
+  (expand [this measure-index]
+    (mapcat
+     #(expand % measure-index)
+     (repeat (:n this) (:pattern this)))))
 
-(defn rot
-  ([xs]
-   (conj (vec (rest xs)) (first xs)))
-  ([xs n]
-   (nth (iterate rot xs) n)))
+(defn r [n pattern] (->rep n pattern))
 
-(defn rot-rec
-  ([xs]
-   (map #(if (vector? %) (vec (rot-rec %)) %) (vec (rot xs))))
-  ([xs n]
-   (nth (iterate rot-rec xs) n)))
+(defrecord choice [patterns]
+  Pattern-expander
+  (expand [this m-i]
+    (let [pattern (nth (:patterns this) (rand-int (count (:patterns this))))]
+      (expand pattern m-i))))
 
-(defn sequencer [time num-beats measure-length gen]
-  (let [next-time (+ measure-length time)]
-    (doseq [[seq-gen trigger-f] @gen]
-     (try 
-       (let [trigger-times (take-while #(< % num-beats) (seq-gen num-beats))]
-         (doseq [trig-time trigger-times]
-           (apply-by (+ time (* (/ measure-length num-beats) trig-time)) trigger-f)))
-       (catch Exception e (prn "caught exception from sequence gen"))))
-    (apply-by next-time #'sequencer [next-time num-beats measure-length gen])))
+(defn c
+  ([] [])
+  ([& patterns]
+   (->choice (vec patterns))))
+
+(defrecord indexed [patterns]
+  Pattern-expander
+  (expand [this m-i]
+    (let [n (mod m-i (count (:patterns this)))
+          selected-pattern (nth (:patterns this) n)
+          reduced-index (quot m-i (count (:patterns this)))]
+      (expand selected-pattern reduced-index))))
+
+(defn i
+  ([] [])
+  ([& patterns]
+   (->indexed (vec patterns))))
