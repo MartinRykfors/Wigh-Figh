@@ -111,7 +111,7 @@ vec3 grid(vec3 dir){
         h+=0.01;
         acc += squares(p, 3.)* hsv2rgb(vec3(h, 0.9, 0.9)) * 3.3;
     }
-    return vec3(acc)*pow(abs(dir.z),.4);
+    return vec3(acc)*pow(abs(dir.z),.8);
 }
 
 vec3 background(vec3 dir){
@@ -122,7 +122,7 @@ vec3 background(vec3 dir){
         return grid(dir) + grid(dir.yzx) + grid(dir.zxy);
     }
     else{
-        return hash(dir) * vec3(2.);
+        return pow(hash(dir), 3.) * vec3(4.);
     }
     //return grid(dir) + grid(dir.yzx) + grid(dir.zxy);
     //return hash(dir) * vec3(1.);
@@ -224,7 +224,7 @@ void main(){
 	vec3 up = vec3(0.,0.,1.);
 	float aspect = size.x/size.y;
     float t = floor(time);
-    stat = fract(time/4.5) < 0.85 ? 0. : 1.;
+    stat = fract(time/4.5) < 0.8 ? 0. : 1.;
     float vig = p.x*(1.-p.x)*p.y*(1.-p.y)*4.;
     vig = pow(vig,0.3);
     if (stat == 1.){
