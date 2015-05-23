@@ -52,13 +52,13 @@
   (.set shader "atime" (animation-time))
   (.set shader "stat" (float @background-type))
   (update-animation!)
-  (when (= 0 (mod (q/frame-count) 80))
+  (when (= 0 (mod (q/frame-count) 60))
     (reset-animation!))
   (write-fps))
 
 (q/defsketch fold
   :title ""
-  :size [800 600]
+  :size [800 800]
   :setup setup
   :renderer :opengl
   :middleware [m/live-shader]

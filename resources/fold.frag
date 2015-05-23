@@ -170,7 +170,7 @@ vec3 render(Ray ray){
     vec3 pos;
     float minDist = 1000.;
     float curMap;
-    for (int i = 0; i < 60; i++){
+    for (int i = 0; i < 50; i++){
         pos = ray.org + dist*ray.dir;
         curMap = map(pos).x;
         dist+=curMap;
