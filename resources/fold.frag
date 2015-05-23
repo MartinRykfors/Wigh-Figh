@@ -1,7 +1,8 @@
 uniform float time;
 uniform vec2 size;
-float atime;
-float stat;
+uniform float atime;
+uniform float stat;
+vec2 fragPosition;
 
 struct Ray
 {
@@ -117,12 +118,14 @@ vec3 grid(vec3 dir){
 vec3 background(vec3 dir){
     // return spheregrid(dir);
     if (stat == 0.){
-        //return horizon(dir);
-        //return vec3(0.);
         return grid(dir) + grid(dir.yzx) + grid(dir.zxy);
     }
+    else if (stat == 1.){
+        float f = (1.5 + fract(fragPosition.y*3. + time*5.)/2.)/2.;
+        return pow(hash(dir), 3.) * vec3(4.) * f;
+    }
     else{
-        return pow(hash(dir), 3.) * vec3(4.);
+        return horizon(dir);
     }
     //return grid(dir) + grid(dir.yzx) + grid(dir.zxy);
     //return hash(dir) * vec3(1.);
@@ -217,6 +220,7 @@ Ray createRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspec
 
 void main(){
     vec2 p = gl_FragCoord.xy / size;
+    fragPosition = p;
 	vec3 cameraPos = vec3(6.*sin(time/3.),6.*cos(time/3.),-4.*sin(time/8.));
 	//vec3 cameraPos = vec3(5.*sin(time/3.),5.*cos(time/3.),-8);
 	//vec3 cameraPos = vec3(0.,5.,-5.);
@@ -224,17 +228,17 @@ void main(){
 	vec3 up = vec3(0.,0.,1.);
 	float aspect = size.x/size.y;
     float t = floor(time);
-    stat = fract(time/4.5) < 0.8 ? 0. : 1.;
+    //stat = fract(time/4.5) < 0.8 ? 0. : 1.;
     float vig = p.x*(1.-p.x)*p.y*(1.-p.y)*4.;
     vig = pow(vig,0.3);
     if (stat == 1.){
         p.x += (pow(hash(quantize(p.y+hash(time), 128.)), 8.)+0.1) * (hash(time/10.)-.5)*.3;
     }
-    float f = fract(time);
-    t += 1. - exp(-f*9.);
-    atime = t;
+    // float f = fract(time);
+    // t += 1. - exp(-f*9.);
+    // atime = t;
     rotation = rotateX(atime*1.9)*rotateY(atime*1.4);
-    jitter = sin(time*80.)*.1*pow((1.-fract(time)),5.);
+    jitter = sin(time*100.)*.5*(1.-fract(atime));
 	Ray ray = createRay(cameraPos, lookAt, up, p, 90., aspect);
     vec3 col = render(ray);
     col *= vig;
