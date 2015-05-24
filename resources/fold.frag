@@ -117,35 +117,38 @@ vec3 grid(vec3 dir){
 
 float onoff(float a, float h){
     float f = sin(a*2. +a * floor(8.*h) + a*.5*h*(sin(a * 10.)));
-    f = f < 0. ? 1. : 0.;
+    f = f < -0.5 ? 1. : 0.;
     return f;
 }
 
 vec3 circles(vec3 dir){
-    vec2 p = dir.xy / max(0.001, (abs(dir.z) + .2)/1.2);
+    vec2 p = dir.xy / max(0.001, acos(-abs(dir.z))/5.);
     float rr = length(p) * 10.;
     float a = atan(p.x, p.y);
     float r = mod(rr, 2.);
     float h = hash(rr-r + sign(dir.z));
-    float t = time*(1.+h) + h*3.;
-    float s = hash(floor(t));
-    float e = hash(floor(t) + 1.);
+    float t = time + h * 3.;
+    float s = hash(floor(t)) * 3.;
+    float e = hash(floor(t) + 1.) * 3.;
     t = fract(t);
-    t = sqrt(t);
+    t = clamp(t*3., 0., 1.);
+    //t = sqrt(t);
+    //t *= t;
+    t = pow(t, h*2.);
     t = t*e + (1.-t)*s;
     a += 3.1415;
-    a += t * (hash(rr-r) - 0.5) * 5.;
+    a += t * (hash(rr-r) - 0.5) * 3.;
     a = mod(a, 3.1415*2.);
     float cut = rr < 24. ? 1. : 0.;
     float m = 0.1;
     float f = smoothstep(.0, .0+m, r)
         *(1.-smoothstep(1.5, 1.5+m, r))
         *onoff(a, h);
-    float i = smoothstep(0.2, 0.2+m, r)
-        *(1.-smoothstep(1.3, 1.3+m, r))
+    float i = smoothstep(0.1, 0.1+m, r)
+        *(1.-smoothstep(1.4, 1.4+m, r))
         *onoff(a, h);
-    f -= i*.2;
-    return f*hsv2rgb(vec3(0.5, 1., 1.)) * cut;
+    f -= i*.5;
+    return f*hsv2rgb(vec3(0.0, .9, 1.)) * 1.4 * cut;
 }
 
 vec3 background(vec3 dir){

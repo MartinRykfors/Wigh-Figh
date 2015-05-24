@@ -23,8 +23,8 @@
     (reset! background-type index)))
 
 (set-background! :digital)
-(set-background! :horizon)
 (set-background! :static)
+(set-background! :horizon)
 
 (defn ease [x]
   (->> x
