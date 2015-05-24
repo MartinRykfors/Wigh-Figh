@@ -115,10 +115,43 @@ vec3 grid(vec3 dir){
     return vec3(acc)*pow(abs(dir.z),.8);
 }
 
+float onoff(float a, float h){
+    float f = sin(a*2. +a * floor(8.*h) + a*.5*h*(sin(a * 10.)));
+    f = f < 0. ? 1. : 0.;
+    return f;
+}
+
+vec3 circles(vec3 dir){
+    vec2 p = dir.xy / max(0.001, (abs(dir.z) + .2)/1.2);
+    float rr = length(p) * 10.;
+    float a = atan(p.x, p.y);
+    float r = mod(rr, 2.);
+    float h = hash(rr-r + sign(dir.z));
+    float t = time*(1.+h) + h*3.;
+    float s = hash(floor(t));
+    float e = hash(floor(t) + 1.);
+    t = fract(t);
+    t = sqrt(t);
+    t = t*e + (1.-t)*s;
+    a += 3.1415;
+    a += t * (hash(rr-r) - 0.5) * 5.;
+    a = mod(a, 3.1415*2.);
+    float cut = rr < 24. ? 1. : 0.;
+    float m = 0.1;
+    float f = smoothstep(.0, .0+m, r)
+        *(1.-smoothstep(1.5, 1.5+m, r))
+        *onoff(a, h);
+    float i = smoothstep(0.2, 0.2+m, r)
+        *(1.-smoothstep(1.3, 1.3+m, r))
+        *onoff(a, h);
+    f -= i*.2;
+    return f*hsv2rgb(vec3(0.5, 1., 1.)) * cut;
+}
+
 vec3 background(vec3 dir){
     // return spheregrid(dir);
     if (stat == 0.){
-        return grid(dir) + grid(dir.yzx) + grid(dir.zxy);
+        return  grid(dir.yzx) + grid(dir.zxy) + circles(dir);
     }
     else if (stat == 1.){
         float f = (1.5 + fract(fragPosition.y*3. + time*5.)/2.)/2.;
@@ -222,8 +255,6 @@ void main(){
     vec2 p = gl_FragCoord.xy / size;
     fragPosition = p;
 	vec3 cameraPos = vec3(6.*sin(time/3.),6.*cos(time/3.),-4.*sin(time/8.));
-	//vec3 cameraPos = vec3(5.*sin(time/3.),5.*cos(time/3.),-8);
-	//vec3 cameraPos = vec3(0.,5.,-5.);
 	vec3 lookAt = vec3(0.);
 	vec3 up = vec3(0.,0.,1.);
 	float aspect = size.x/size.y;
@@ -242,5 +273,7 @@ void main(){
 	Ray ray = createRay(cameraPos, lookAt, up, p, 90., aspect);
     vec3 col = render(ray);
     col *= vig;
+    // p -= .5;
+    // col = circles(vec3(p*5.,1.));
     gl_FragColor = vec4(col, 1.);
 }
