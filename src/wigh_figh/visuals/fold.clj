@@ -28,7 +28,7 @@
 
 (defn ease [x]
   (->> x
-       (* -9)
+       (* -11)
        (q/exp)
        (- 1)))
 
@@ -51,14 +51,12 @@
   (.set shader "time" (float (/ (q/millis) 1000)))
   (.set shader "atime" (animation-time))
   (.set shader "stat" (float @background-type))
-  (update-animation!)
-  (when (= 0 (mod (q/frame-count) 60))
-    (reset-animation!))
+  (update-animation!) 
   (write-fps))
 
 (q/defsketch fold
   :title ""
-  :size [800 800]
+  :size [800 600]
   :setup setup
   :renderer :opengl
   :middleware [m/live-shader]

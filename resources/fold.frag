@@ -55,7 +55,7 @@ float quantize(float x, float q){
 vec3 spheregrid(vec3 dir){
     float a = atan(dir.y, dir.x)/3.1415 ;
     float f = asin(dir.z) / 3.1415 ;
-    f+= time*8.;// + a*4.;
+    //f+= time*8.;// + a*4.;
     float qa = quantize(a, 8.);
     float qf = quantize(f, 8.);
     float g = abs(a-qa)*16.;
@@ -101,18 +101,24 @@ float squares(vec2 p, float r){
     return f - i*.8;
 }
 
-vec3 grid(vec3 dir){
+vec3 grid(vec3 dir, bool vert){
     vec2 p = dir.xy / max(0.001, abs(dir.z));
-    vec3 acc = vec3(0.);
-    float h = .2;
-    for (int i = 0; i<10; i++){
-        p.x += sin(float(i)*2. + time/8.)*1.;
-        p.y += 0.1*float(i+4)*time;
-        p*=1.05;
-        h+=0.01;
-        acc += squares(p, 3.)* hsv2rgb(vec3(h, 0.9, 0.9)) * 3.3;
-    }
-    return vec3(acc)*pow(abs(dir.z),.8);
+    p *= 3.;
+    p.y *= 0.06;
+    p.y += time * 20.3;
+    vert = hash(floor(p.y/5. + 0.5)) < 0.5 ? vert : !vert;
+    p += 0.5;
+    float h = hash(floor(p*sign(dir.z)));
+    float h2 = hash(floor(p.y/6.));
+    float h3 = hash(floor(p.y/20.)+sign(dir.z));
+    float band = abs(p.x) < 2. + floor(30.*h3*h3) ? 1. : 0.;
+    p = mod(p, vec2(1.));
+    p -= 0.5;
+    float f = h2 < 0.5 ? smoothstep(0.6, 0.0,length(p))*9. : 1.;
+    h = h < h2/1.2 + 0.1 && vert ? 1. : 0.;
+    vec3 acc = hsv2rgb(vec3(h2/5.+.0,.9,0.9))*h*band*3.*f;
+
+    return acc*pow(abs(dir.z),.5);
 }
 
 float onoff(float a, float h){
@@ -122,39 +128,39 @@ float onoff(float a, float h){
 }
 
 vec3 circles(vec3 dir){
-    vec2 p = dir.xy / max(0.001, acos(-abs(dir.z))/5.);
+    vec2 p = dir.xy / max(0.001, acos(-abs(dir.z))/4.);
     float rr = length(p) * 10.;
     float a = atan(p.x, p.y);
     float r = mod(rr, 2.);
     float h = hash(rr-r + sign(dir.z));
-    float t = time + h * 3.;
-    float s = hash(floor(t)) * 3.;
-    float e = hash(floor(t) + 1.) * 3.;
+    float t = time + (rr-r)/30. + floor(h * 9.);
+    float s = hash(floor(t+h)) * 10.; // adding h to t here creates discontinuities
+    float e = hash(floor(t+h) + 1.) * 10.;
     t = fract(t);
-    t = clamp(t*3., 0., 1.);
-    //t = sqrt(t);
-    //t *= t;
-    t = pow(t, h*2.);
+    t = clamp(t*3.2, 0., 1.);
+    // t = sqrt(t);
+    // t *= t;
+    // t = pow(t, h*2.);
     t = t*e + (1.-t)*s;
     a += 3.1415;
-    a += t * (hash(rr-r) - 0.5) * 3.;
+    a += t;
     a = mod(a, 3.1415*2.);
-    float cut = rr < 24. ? 1. : 0.;
+    float cut = rr < 24. && rr > 8. ? 1. : 0.;
     float m = 0.1;
     float f = smoothstep(.0, .0+m, r)
         *(1.-smoothstep(1.5, 1.5+m, r))
         *onoff(a, h);
-    float i = smoothstep(0.1, 0.1+m, r)
-        *(1.-smoothstep(1.4, 1.4+m, r))
-        *onoff(a, h);
-    f -= i*.5;
-    return f*hsv2rgb(vec3(0.0, .9, 1.)) * 1.4 * cut;
+    return f*hsv2rgb(vec3(.0, .9, 1.)) * 3.5 * cut;
 }
 
 vec3 background(vec3 dir){
     // return spheregrid(dir);
     if (stat == 0.){
-        return  grid(dir.yzx) + grid(dir.zxy) + circles(dir);
+        vec3 g = grid(dir.zxy, true)
+            + grid(dir.yxz, false);
+        return g;
+        // vec3 c = circles(dir.zyx);
+        // return clamp(c + (1.-c*2.2)*g, 0., 5.);
     }
     else if (stat == 1.){
         float f = (1.5 + fract(fragPosition.y*3. + time*5.)/2.)/2.;
@@ -230,7 +236,7 @@ vec3 render(Ray ray){
         f *= smoothstep(start, end, abs(dz-dy));
         f = 1. - f;
         float rf = 1.-abs(dot(ray.dir, n));
-        rf = pow(rf,2.);
+        rf *= rf;
         flash = sqrt(flash);
         return diffuse*(1.-rf)*0.4 + flash*f*glowColor*2.5 + refl*rf*1.3; 
     }
@@ -257,7 +263,8 @@ Ray createRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspec
 void main(){
     vec2 p = gl_FragCoord.xy / size;
     fragPosition = p;
-	vec3 cameraPos = vec3(6.*sin(time/3.),6.*cos(time/3.),-4.*sin(time/8.));
+	vec3 cameraPos = vec3(-8.,0.,-4.);
+	// vec3 cameraPos = vec3(6.*sin(-3./3.),6.*cos(3./3.),-4.*sin(time/8.));
 	vec3 lookAt = vec3(0.);
 	vec3 up = vec3(0.,0.,1.);
 	float aspect = size.x/size.y;
@@ -278,5 +285,6 @@ void main(){
     col *= vig;
     // p -= .5;
     // col = circles(vec3(p*5.,1.));
+    //col = grid(vec3(p*50.,1.),true);
     gl_FragColor = vec4(col, 1.);
 }
