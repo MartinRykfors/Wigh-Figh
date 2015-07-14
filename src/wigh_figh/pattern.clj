@@ -1,5 +1,8 @@
 (ns wigh-figh.pattern)
 
+(defprotocol Length-unit
+  (note-lengths [this start duration]))
+
 (defprotocol Pattern-unit
   (trigger-times [this start duration]))
 
@@ -7,6 +10,16 @@
   (expand [this measure-index]))
 
 (defn pattern [pat] #(trigger-times (expand pat %) 0 1))
+
+(defn lengths [pat] #(note-lengths (expand pat %) 0 1))
+
+(extend-type java.lang.Double
+  Length-unit
+  (note-lengths [x start _] [{:start start :end (+ x start)}]))
+
+(extend-type clojure.lang.Ratio
+  Length-unit
+  (note-lengths [x start _] [{:start start :end (+ x start)}]))
 
 (extend-type java.lang.Long
   Pattern-unit
@@ -17,18 +30,43 @@
          (map #(* % duration))
          (map #(+ start %))
          (vec)))
+  Length-unit
+  (note-lengths [x start _]
+    (if (= 0 x)
+      [[]]
+      [{:start start :end (+ x start)}]))
   Pattern-expander
   (expand [x _] [x]))
 
+(defn- cut-note
+  ([note]
+   note)
+  ([note next-note]
+   (if (<= (:end note) (:start next-note))
+     note
+     (assoc note :end (:start next-note)))))
+
+(defn- cut-notes [notes]
+  (->> notes
+       (partition-all 2 1)
+       (map #(apply cut-note %))))
+
 (extend-type clojure.lang.Sequential
+  Length-unit
+  (note-lengths [xs start duration]
+    (let [num-xs (count xs)
+          step-length (/ duration num-xs)
+          start-times (map #(+ start (* step-length %)) (range num-xs))]
+      (->>
+       (mapcat #(note-lengths %1 %2 step-length) xs start-times)
+       (filter #(not (empty? %)))
+       (cut-notes))))
   Pattern-unit
   (trigger-times [xs start duration]
     (let [num-xs (count xs)
           step-length (/ duration num-xs)
-          start-times (map #(+ start (* step-length %)) (range num-xs))
-          x-times (map vector start-times xs)
-          zs (map #(zipmap [:start :pat] %) x-times)]
-      (mapcat #(trigger-times (% :pat) (% :start) step-length) zs)))
+          start-times (map #(+ start (* step-length %)) (range num-xs))]
+      (mapcat #(trigger-times %1 %2 step-length) xs start-times)))
   Pattern-expander
   (expand [xs measure-index] (vector (vec (mapcat #(expand % measure-index) xs)))))
 

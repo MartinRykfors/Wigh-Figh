@@ -118,3 +118,41 @@
          (expand (i) 0)
 
          (expand (c) 0))))
+
+(defn- vec-to-note [v]
+  {:start (nth v 0)
+   :end (nth v 1)})
+
+(defn- vecs-to-notes [vs] (map vec-to-note vs))
+
+(deftest Length-patterns
+  (testing "Specifying lengths of notes in patterns"
+    (are [expected y start duration] (= (vecs-to-notes expected) (note-lengths y start duration))
+         [[0 1]]
+         1 0 1
+
+         [[1/2 1]]
+         1/2 1/2 1
+
+         [[0 0.5]]
+         0.5 0 1
+
+         [[0 1/2] [1/2 1]]
+         [1/2 1/2] 0 1
+
+         [[0 1/4] [1/4 1/2]]
+         [1/4 1/4] 0 1/2
+
+         [[1/2 3/4] [3/4 1]]
+         [1/4 1/4] 1/2 1/2
+
+         [[0 1/4] [3/4 1]]
+         [1/4 0 0 1/4] 0 1))
+  (testing "Specifying lengths in recursive patters"
+    (are [expected y start duration] (= (vecs-to-notes expected) (note-lengths y start duration))
+         [[0 1/3] [1/2 3/4] [3/4 1]]
+         [1/3 [1/4 1/4]] 0 1))
+  (testing "Lengths are cut off before the next note"
+    (are [x y start duration] (= x (note-lengths y start duration))
+         [[0 1/2] [1/2 1]]
+         [1 1/2] 0 1))) 
