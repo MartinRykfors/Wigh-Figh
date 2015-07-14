@@ -15,11 +15,15 @@
 
 (extend-type java.lang.Double
   Length-unit
-  (note-lengths [x start _] [{:start start :end (+ x start)}]))
+  (note-lengths [x start _] [{:start start :end (+ x start)}])
+  Pattern-expander
+  (expand [x _] [x]))
 
 (extend-type clojure.lang.Ratio
   Length-unit
-  (note-lengths [x start _] [{:start start :end (+ x start)}]))
+  (note-lengths [x start _] [{:start start :end (+ x start)}])
+  Pattern-expander
+  (expand [x _] [x]))
 
 (extend-type java.lang.Long
   Pattern-unit
