@@ -15,6 +15,16 @@
          (* 0.3)
          (out [0 1]))))
 
+(defsynth hihat []
+  (->>
+   (white-noise)
+   (* (env-gen (env-perc 0.01 0.2) :action FREE))
+   (#(hpf % 5000))
+   (* 0.1)
+   (out [0 1])))
+
+(hihat)
+
 (kill h-i)
 (def h-i (hit))
 
@@ -32,8 +42,9 @@
 
 (reset! gen
         [
-         [(lengths [1/16 1/5 1/32 1/8]) turn-on turn-off]
+         [:hold (i [1/8 1/4 0 1/16 ] 0.8) turn-on turn-off]
+         [:pattern [[1 1 0 1] 2 2 2] hihat]
          ])
 
-(length-sequencer (+ 500 (now)) 0 4000 gen)
+(sequencer (+ 500 (now)) 0 4000 gen)
 (stop)
