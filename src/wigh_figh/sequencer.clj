@@ -1,6 +1,6 @@
 (ns wigh-figh.sequencer
   (:require [wigh-figh.pattern :as p])
-  (:use [overtone.live :only [apply-by]]))
+  (:use [overtone.live :only [apply-by now]]))
 
 (defmulti schedule
   (fn [type measure-index & rest] type))
@@ -25,3 +25,8 @@
       (catch Exception e (prn (str "Sequence exn: " (.getMessage e))))))
   (let [next-time (+ measure-length time)]
     (apply-by next-time #'sequencer [next-time (inc measure-index) measure-length gen])))
+
+(defn run-sequencer [bpm signature generator-atom]
+  (let [ms-per-beat (* 1000 (/ 60 bpm))
+        measure-length (* signature ms-per-beat)]
+    (sequencer (+ 600 (now)) 0 measure-length generator-atom)))
