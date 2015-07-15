@@ -1,7 +1,7 @@
 (ns wigh-figh.pattern)
 
 (defprotocol Length-unit
-  (note-lengths [this start duration]))
+  (note-lengths [this normal-factor start duration]))
 
 (defprotocol Pattern-unit
   (trigger-times [this start duration]))
@@ -12,18 +12,18 @@
 (defn pattern [pat]
   (fn [measure-index] (trigger-times (expand pat measure-index) 0 1)))
 
-(defn lengths [pat]
-  (fn [measure-index] (note-lengths (expand pat measure-index) 0 1)))
+(defn lengths [pat normal-factor]
+  (fn [measure-index] (note-lengths (expand pat measure-index) normal-factor 0 1)))
 
 (extend-type java.lang.Double
   Length-unit
-  (note-lengths [x start _] [{:start start :end (+ x start)}])
+  (note-lengths [x normal-factor start _] [{:start start :end (+ (/ x normal-factor) start)}])
   Pattern-expander
   (expand [x _] [x]))
 
 (extend-type clojure.lang.Ratio
   Length-unit
-  (note-lengths [x start _] [{:start start :end (+ x start)}])
+  (note-lengths [x normal-factor start _] [{:start start :end (+ (/ x normal-factor) start)}])
   Pattern-expander
   (expand [x _] [x]))
 
@@ -37,10 +37,10 @@
          (map #(+ start %))
          (vec)))
   Length-unit
-  (note-lengths [x start _]
+  (note-lengths [x normal-factor start _]
     (if (= 0 x)
       [[]]
-      [{:start start :end (+ x start)}]))
+      [{:start start :end (+ (/ x normal-factor) start)}]))
   Pattern-expander
   (expand [x _] [x]))
 
@@ -59,12 +59,12 @@
 
 (extend-type clojure.lang.Sequential
   Length-unit
-  (note-lengths [xs start duration]
+  (note-lengths [xs normal-factor start duration]
     (let [num-xs (count xs)
           step-length (/ duration num-xs)
           start-times (map #(+ start (* step-length %)) (range num-xs))]
       (->>
-       (mapcat #(note-lengths %1 %2 step-length) xs start-times)
+       (mapcat #(note-lengths %1 normal-factor %2 step-length) xs start-times)
        (filter #(not (empty? %)))
        (cut-notes))))
   Pattern-unit

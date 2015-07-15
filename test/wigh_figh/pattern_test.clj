@@ -127,7 +127,8 @@
 
 (deftest Length-patterns
   (testing "Specifying lengths of notes in patterns"
-    (are [expected y start duration] (= (vecs-to-notes expected) (note-lengths y start duration))
+    (are [expected y start duration] (= (vecs-to-notes expected)
+                                        (note-lengths y 1 start duration))
          [[0 1]]
          1 0 1
 
@@ -149,10 +150,18 @@
          [[0 1/4] [3/4 1]]
          [1/4 0 0 1/4] 0 1))
   (testing "Specifying lengths in recursive patters"
-    (are [expected y start duration] (= (vecs-to-notes expected) (note-lengths y start duration))
+    (are [expected y start duration] (= (vecs-to-notes expected)
+                                        (note-lengths y 1 start duration))
          [[0 1/3] [1/2 3/4] [3/4 1]]
          [1/3 [1/4 1/4]] 0 1))
   (testing "Lengths are cut off before the next note"
-    (are [x y start duration] (= x (note-lengths y start duration))
+    (are [expected pattern start duration] (= (vecs-to-notes expected)
+                                              (note-lengths pattern 1 start duration))
          [[0 1/2] [1/2 1]]
-         [1 1/2] 0 1))) 
+         [1 1/2] 0 1))
+  (testing "Lengths can be normalized"
+    (are [expected pattern normalization start duration]
+      (= (vecs-to-notes expected)
+         (note-lengths pattern normalization start duration))
+      [[0 1/2] [1/2 1]]
+      [1 1] 2 0 1))) 

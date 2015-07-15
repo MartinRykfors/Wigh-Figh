@@ -26,7 +26,6 @@
 
 (hihat)
 
-(kill h-i)
 (def h-i (hit))
 
 (defn turn-on []
@@ -36,7 +35,7 @@
   (ctl h-i :gate 0))
 
 (ctl h-i :note 60)
-(ctl h-i :ffreql (fader 300 17000 3 "----------#-------"))
+(ctl h-i :ffreql (fader 300 17000 3 "----------------#-"))
 (turn-off)
 (turn-on)
 
@@ -44,11 +43,10 @@
 
 (reset! gen
         [
-         [:hold (i [(r 2 1/8) 0 1/16 ] 0.8) turn-on turn-off]
-         [:pattern [[1 1 0 1] 2 2 2] hihat]
+         [:hold 4 [[0 1/2] 0 1 0] turn-on turn-off]
+         [:pattern [1 1 1 1] hihat]
          ])
 
 (sequencer (+ 600 (now)) 0 4000 gen)
 (def s (run-sequencer 120 4 gen))
-(kill s) ;does not work
 (stop)

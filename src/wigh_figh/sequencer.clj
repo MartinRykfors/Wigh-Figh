@@ -11,8 +11,8 @@
     (map (fn [time] [time trigger-f]) trigger-times)))
 
 (defmethod schedule :hold [type measure-index & rest]
-  (let [[pattern on-f off-f] rest
-        notes ((p/lengths pattern) measure-index)]
+  (let [[normal-factor pattern on-f off-f] rest
+        notes ((p/lengths pattern normal-factor) measure-index)]
     (mapcat (fn [note] [[(:start note) on-f] [(:end note) off-f]]) notes)))
 
 (defn sequencer [time measure-index measure-length gen]
