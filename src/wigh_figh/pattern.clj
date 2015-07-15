@@ -9,9 +9,11 @@
 (defprotocol Pattern-expander
   (expand [this measure-index]))
 
-(defn pattern [pat] #(trigger-times (expand pat %) 0 1))
+(defn pattern [pat]
+  (fn [measure-index] (trigger-times (expand pat measure-index) 0 1)))
 
-(defn lengths [pat] #(note-lengths (expand pat %) 0 1))
+(defn lengths [pat]
+  (fn [measure-index] (note-lengths (expand pat measure-index) 0 1)))
 
 (extend-type java.lang.Double
   Length-unit
