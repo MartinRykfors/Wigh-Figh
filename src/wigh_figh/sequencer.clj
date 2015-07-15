@@ -11,7 +11,6 @@
     (map (fn [time] [time trigger-f]) trigger-times)))
 
 (defmethod schedule :hold [type measure-index & rest]
-  (print "snth" rest)
   (let [[pattern on-f off-f] rest
         notes ((p/lengths pattern) measure-index)]
     (mapcat (fn [note] [[(:start note) on-f] [(:end note) off-f]]) notes)))
