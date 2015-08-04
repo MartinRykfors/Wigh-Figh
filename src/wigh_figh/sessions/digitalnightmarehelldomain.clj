@@ -17,14 +17,15 @@
                  (#(lpf % 1800))
                  (* 0.8))
         sig (->> [[0.03 2000 200]
-                  [0.5 120 50]
-                  [0.3 50 30]]
+                  [0.2 120 50]
+                  [0.5 50 30]]
                  (map #(apply chirp %))
                  (mix)
-                 (+ noi)
-                 (* 52)
-                 (#(clip2 % 0.5))
-                 ;(#(lpf % 2000))
+                 (+ (* 0.1 noi))
+                 (* 80)
+                 (#(clip2 % 0.7))
+                 (#(lpf % 6000))
+                 (#(decimator:ar % (fader 400 18000 3 "----------------#-")))
                  (* amp))
         _ (detect-silence sig 0.0001 0.1 FREE)]
     (out [0 1] sig)))
@@ -32,13 +33,15 @@
 (defsynth burst [amp 0.3 lfreq 8000 gate 0]
   (->>
    (white-noise)
+   (* (env-gen (env-adsr 0.01 0.3 0.7 0.01) :gate gate))
+   (+ (* 3.8 (dust2 900)))
    (* amp)
    (#(lpf % lfreq))
    (* (env-gen (env-asr 0.01 1 0.01) :gate gate))
    (out [0 1])))
 
 (def b-inst (burst))
-(ctl b-inst :lfreq (fader 200 17000 3 "--------------#---"))
+(ctl b-inst :lfreq (fader 200 17000 3 "---------------#--"))
 
 (defn noise-on []
   (do
@@ -66,9 +69,9 @@
 (defsynth hihat [amp 0.6]
   (->>
    (white-noise)
-   (* (env-gen (env-perc 0 0.10) :action FREE))
+   (* (env-gen (env-perc 0 0.1) :action FREE))
    (#(lpf % (fader 200 17000 3 "-----------------#")))
-   (#(hpf % (fader 200 17000 3 "------------#-----")))
+   (#(hpf % (fader 200 17000 3 "---------------#--")))
    (* amp)
    (out [0 1])))
 
@@ -86,15 +89,9 @@
          (* amp)
          (* (env-gen (env-asr 1 1 1) :gate gate))
          (out [0 1]))))
-(c-pads :ffreql (fader 200 17000 3 "-----------#---"))
-(c-pads :ffreqh (fader 200 17000 3 "-----------#---"))
-(c-pads :drive (fader 1 20 "----------------#-"))
-(c-pads :clip (fader 0 1 "---------------#--"))
-(c-pads :amp (fader 0 1 "---------------#--"))
-(c-pads :index (fader 0 10 "-----------#------"))
 
 (def p-s (atom []))
-(reset! p-s (map #(pad :note % :gate 0) (chord :c4 :minor7)))
+(reset! p-s (map #(pad :note % :gate 0) (chord :e3 :minor7)))
 (defn play-pad []
   (doseq [pad @p-s]
     (ctl pad :gate 1)))
@@ -104,22 +101,34 @@
 (defn c-pads [key arg]
   (doseq [pad @p-s]
     (ctl pad key arg)))
+(c-pads :ffreql (fader 200 17000 3 "-------#-------"))
+(c-pads :ffreqh (fader 200 17000 3 "-----#---------"))
+(c-pads :drive (fader 1 20 "----------#-------"))
+(c-pads :clip (fader 0 1 "-------------#----"))
+(c-pads :amp (fader 0 1 "----#-------------"))
+(c-pads :index (fader 0 10 "--------#---------"))
 (play-pad)
 (stop-pad)
 (kill pad)
 
+(defsynth ping []
+  (->>
+   [17000]
+   (map #(sin-osc %))
+   (mix)
+   (* 0.3)
+   (* (env-gen (env-perc 0.1 1) :action FREE))
+   (out [0 1])))
+
 (defonce gen (atom nil))
 (reset! gen
         [
-         ;; [(pattern [[1 0] 1 [0 0] [1 0 0 1] 0 0]) #(do (viz/reset-animation!) (kick))]
-         ;; [(pattern [0 0 [0 1] 0 0 1]) #(do (noise-on))]
-         [(pattern [1 0 0 1 0 0]) #(do (noise-off))]
-         ;; [(pattern [1]) #(do (texture))]
-         ;; [(pattern [(r 6 4)]) #(do (hihat))]
-         ;; [(pattern 1) #(do (play-pad))]
-         [(pattern [0 0 1 0]) #(do (stop-pad))]
+         ;; [:pattern [(c 4 3) [2 0] 0 0] #(do (viz/reset-animation!) (kick))]
+         ;; [:hold 64 [0 1 0 [0 1/2]] #'noise-on #'noise-off]
+         ;; [:pattern [(r 16 (c 1 2))] hihat]
+         ;; [:pattern [0 0 1 0] ping]
+         ;; [:hold 4 [3] play-pad stop-pad]
          ])
 
-(sequencer (+ 1000 (now)) 0 3200 gen )
-(noise-off)
+(run-sequencer 70 4 gen)
 (stop)

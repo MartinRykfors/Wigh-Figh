@@ -205,7 +205,7 @@ vec3 normal(vec3 pos)
 	return normalize(nor);
 }
 
-vec3 glowColor = vec3(2.9, 1.4, 1.2);
+vec3 glowColor = vec3(1.9, 1.4, 2.2);
 
 vec3 render(Ray ray){
     float dist = 0.;
@@ -278,7 +278,7 @@ void main(){
     // float f = fract(time);
     // t += 1. - exp(-f*9.);
     // atime = t;
-    rotation = rotateX(atime*1.9)*rotateY(atime*1.4);
+    rotation = rotateX(atime*0.3)*rotateY(atime*0.7);
     jitter = sin(time*100.)*.5*(1.-fract(atime));
 	Ray ray = createRay(cameraPos, lookAt, up, p, 90., aspect);
     vec3 col = render(ray);

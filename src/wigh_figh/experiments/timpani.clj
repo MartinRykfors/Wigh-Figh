@@ -36,16 +36,14 @@
     (out [0 1]  sig)))
 
 (timpani)
-
-
 (defsynth thing []
   (->>
    (saw (fader 10 3000 3 "---------#--------"))
-   (* (sin-osc (fader 10 1000 3 "--------#---------")))
-   (#(freq-shift % (fader 3000 17000 3 "-------#----------") 0))
+   (* (sin-osc (fader 10 1000 3 "-------#----------")))
+   (#(freq-shift % (fader 3000 17000 3 "------#-----------") 0))
    (+ (* 0.2 (white-noise)))
-   (#(rhpf % (fader 1000 17000 3 "--------#---------") 0.6))
-   (* (env-gen (env-perc 0.01 (fader 0.05 0.4 "---#--------------")) :action FREE))
+   (#(rhpf % (fader 1000 17000 3 "----#-------------") 0.6))
+   (* (env-gen (env-perc 0.01 (fader 0.05 0.4 "--#---------------")) :action FREE))
    (out [0 1])))
 
 (thing) 
@@ -53,10 +51,10 @@
 (defonce gen (atom nil))
 (reset! gen
         [
-         [(pattern [16]) #(do (thing))]
+         [:pattern [[2 1 1 0] [0 1 1 0] 4 [0 1 0 1] ] #(do (thing))]
          ])
 
-(sequencer (+ 1000 (now)) 0 3200 gen )
+(run-sequencer 120 4 gen)
 (stop)
 
 (demo 8 (->>
@@ -66,3 +64,41 @@
          (pulse 200)
          (+ (saw 200.8))
          (#(rlpf % 1000 0.6))))
+
+(demo (impulse:ar 400 0))
+(demo (* 40 (resonz (dust2 200) 400 0.1)))
+(demo 3
+      (->
+       ;; [270 2300 3000]
+       ;; [300 870 2250]
+       [400 2000 2550]
+       ;; [530 1850 2500]
+       ;; [640 1200 2400]
+       ;; [660 1700 2400]
+       ((fn [f] (->
+                 ;; (impulse:ar (+ 78 (* 10 (sin-osc 2 (sin-osc 2)))))
+                 (->>
+                  (sin-osc 0.3)
+                  (+ 1)
+                  (* 0.5)
+                  (pulse 200)
+                  (+ (saw 200.8))
+                  (#(rlpf % 1000 0.6)))
+                 (resonz f 0.02))))
+       ;; ((fn [f] (-> (white-noise) (resonz f 0.04))))
+       (mix)
+       (normalizer)))
+(demo 9
+      (->
+       (sin-osc 4)
+       (* 300)
+       (#(sin-osc 302 %))
+       (decimator:ar 13)
+       (* 200)
+       (+ 500)
+       (sin-osc)
+       (decimator:ar (+ 1800 (* 800 (sin-osc 0.3))))))
+
+(demo (bpf (dust2 200) 600 0.5))
+(demo (dust2 200) )
+(demo (sin-osc))
