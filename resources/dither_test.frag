@@ -58,5 +58,5 @@ void main() {
     col *= 1.9;
     col -= 0.25;
     col = dither(col);
-    gl_FragColor = vec4(col,1.);
+    gl_FragColor = vec4(vec3(col.z),1.);
 }

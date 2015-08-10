@@ -1,7 +1,9 @@
+#version 120
 uniform float time;
 uniform vec2 size;
 uniform float atime;
 uniform float stat;
+uniform float dit;
 vec2 fragPosition;
 
 struct Ray
@@ -116,7 +118,7 @@ vec3 grid(vec3 dir, bool vert){
     p -= 0.5;
     float f = h2 < 0.5 ? smoothstep(0.6, 0.0,length(p))*9. : 1.;
     h = h < h2/1.2 + 0.1 && vert ? 1. : 0.;
-    vec3 acc = hsv2rgb(vec3(h2/5.+.0,.9,0.9))*h*band*3.*f;
+    vec3 acc = hsv2rgb(vec3(h2/1.-.3,.9,0.9))*h*band*3.*f;
 
     return acc*pow(abs(dir.z),.5);
 }
@@ -260,8 +262,36 @@ Ray createRay(vec3 center, vec3 lookAt, vec3 up, vec2 uv, float fov, float aspec
 	return ray;
 }
 
+uniform float bayer [64] = float[64](1.,49.,13.,61.,4.,52.,16.,64.,33.,17.,45.,29.,36.,20.,48.,32.,9.,57.,5.,53.,12.,60.,8.,56.,41.,25.,37.,21.,44.,28.,40.,24.,3.,51.,15.,63.,2.,50.,14.,62.,35.,19.,47.,31.,34.,18.,46.,30.,11.,59.,7.,55.,10.,58.,6.,54.,43.,27.,39.,23.,42.,26.,38.,22);
+
+vec2 quantize(vec2 p, float q){
+    return floor(p*q)/q;
+}
+
+float coarseness = 4.;
+
+vec3 dither(vec3 col){
+    vec2 frag = gl_FragCoord.xy/coarseness;
+    int i = int(mod(frag.x,8.));
+    int j = int(mod(frag.y,8.));
+    int index = i + 8*j;
+    float b = bayer[index]/65.;
+    b = pow(b,1.8);
+    return step(b,col);
+}
+
 void main(){
     vec2 p = gl_FragCoord.xy / size;
+    if (dit == 1.0){
+        float jitterY = sin(time*10.) < 0 ? 1. : 0.;
+        float jitterX = sin(time*30.) < 0.8 ? 1. : 0.;
+        p.y += sin(time*(100. + 40.*sin(time)))*0.04*jitterY + 0.2*jitterY;
+        p.y = mod(p.y, 1.);
+        p.x += sin(p.y*7.)*0.08 * sin(time*100.)*jitterX;
+        p.x = mod(p.x, 1.);
+        p.x = quantize(p.x,size.x/coarseness/2.);
+        p.y = quantize(p.y,size.y/coarseness/2.);
+    }
     fragPosition = p;
 	vec3 cameraPos = vec3(-8.,0.,-4.);
 	// vec3 cameraPos = vec3(6.*sin(-3./3.),6.*cos(3./3.),-4.*sin(time/8.));
@@ -286,5 +316,8 @@ void main(){
     // p -= .5;
     // col = circles(vec3(p*5.,1.));
     //col = grid(vec3(p*50.,1.),true);
+    if (dit == 1.0){
+        col = dither(col);
+    }
     gl_FragColor = vec4(col, 1.);
 }

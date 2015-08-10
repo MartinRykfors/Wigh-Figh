@@ -6,6 +6,8 @@
 
 (def background-type (atom (float 2.0)))
 
+(def dither (atom 0.0))
+
 (defn reset-animation! []
   (reset! animation-state {:start (float (rand-int 1000)) :progress (float 0.0)}))
 
@@ -21,6 +23,13 @@
                 :static (float 1.0)
                 :horizon (float 2.0))]
     (reset! background-type index)))
+
+(defn dither! [dither?]
+  (let [d-val (if dither? 1.0 0.0)]
+    (reset! dither d-val)))
+
+(dither! false)
+(dither! true)
 
 (set-background! :digital)
 (set-background! :static)
@@ -51,6 +60,7 @@
   (.set shader "time" (float (/ (q/millis) 1000)))
   (.set shader "atime" (animation-time))
   (.set shader "stat" (float @background-type))
+  (.set shader "dit" (float @dither))
   (update-animation!) 
   (write-fps))
 

@@ -1,4 +1,4 @@
-(ns wigh-figh.sessions.digitalnightmarehelldomain ;; working title
+(ns wigh-figh.sessions.kleisli-kliffhanger
   (:require [wigh-figh.visuals.fold :as viz])
   (:use [wigh-figh.fader]
         [wigh-figh.pattern]
@@ -17,18 +17,23 @@
                  (#(lpf % 1800))
                  (* 0.8))
         sig (->> [[0.03 2000 200]
-                  [0.2 120 50]
-                  [0.5 50 30]]
+                  [0.3 120 50]
+                  [0.3 50 30]]
                  (map #(apply chirp %))
                  (mix)
                  (+ (* 0.1 noi))
-                 (* 80)
+                 (* 20)
                  (#(clip2 % 0.7))
-                 (#(lpf % 6000))
-                 (#(decimator:ar % (fader 400 18000 3 "----------------#-")))
+                 (#(lpf % 4000))
+                 (#(decimator:ar % (fader 400 18000 3 "-#----------------")))
                  (* amp))
         _ (detect-silence sig 0.0001 0.1 FREE)]
     (out [0 1] sig)))
+
+(defn play-kick []
+  (do
+    (viz/reset-animation!)
+    (kick)))
 
 (defsynth burst [amp 0.3 lfreq 8000 gate 0]
   (->>
@@ -113,22 +118,48 @@
 
 (defsynth ping []
   (->>
-   [17000]
+   [8000 16000 ]
    (map #(sin-osc %))
    (mix)
-   (* 0.3)
-   (* (env-gen (env-perc 0.1 1) :action FREE))
+   (* 0.1)
+   (* (env-gen (env-perc 0.0 1) :action FREE))
    (out [0 1])))
+
+(defsynth buzz [gate 0 hfreq 10000 lfreq 10000 oamp 1]
+  (let [freq 30
+        high (->>
+              (impulse:ar freq)
+              (#(hpf % hfreq))
+              (#(lpf % lfreq)))]
+    (->>
+     (sin-osc freq)
+     (+ (* oamp (sin-osc (* 2 freq))))
+     (+ high)
+     (* (env-gen (env-adsr 0.1 0.1 1 0.1) :gate gate))
+     (out [0 1]))))
+
+(def b (buzz))
+(ctl b :gate 1)
+(ctl b :hfreq (fader 300 17000 3 "--------------#---"))
+(ctl b :lfreq (fader 300 17000 3 "-----------------#"))
+(ctl b :oamp (fader 0 1 3 "--------#---------"))
+(ctl b :gate 0)
+(defn buzz-on []
+  (do
+    (ctl b :gate 1)
+    (viz/dither! true)))
+(defn buzz-off []
+  (do
+    (ctl b :gate 0)
+    (viz/dither! false)))
 
 (defonce gen (atom nil))
 (reset! gen
         [
-         ;; [:pattern [(c 4 3) [2 0] 0 0] #(do (viz/reset-animation!) (kick))]
-         ;; [:hold 64 [0 1 0 [0 1/2]] #'noise-on #'noise-off]
+         ;; [:pattern [(c 4 [1 2 0 1]) 2 [1 (i 0 1) (c 0 1) 1] [2 [0 1]]] #(do (viz/reset-animation!) (kick))]
+         ;; [:hold 1 [1] #(do (noise-on) (play-kick)) #'noise-off]
          ;; [:pattern [(r 16 (c 1 2))] hihat]
-         ;; [:pattern [0 0 1 0] ping]
          ;; [:hold 4 [3] play-pad stop-pad]
          ])
 
-(run-sequencer 70 4 gen)
-(stop)
+(comment (run-sequencer 70 4 gen))
