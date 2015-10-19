@@ -25,7 +25,7 @@
                  (* 20)
                  (#(clip2 % 0.7))
                  (#(lpf % 4000))
-                 (#(decimator:ar % (fader 400 18000 3 "-#----------------")))
+                 (#(decimator:ar % (fader 400 18000 3 "----------#-------")))
                  (* amp))
         _ (detect-silence sig 0.0001 0.1 FREE)]
     (out [0 1] sig)))
@@ -76,7 +76,7 @@
    (white-noise)
    (* (env-gen (env-perc 0 0.1) :action FREE))
    (#(lpf % (fader 200 17000 3 "-----------------#")))
-   (#(hpf % (fader 200 17000 3 "---------------#--")))
+   (#(hpf % (fader 200 17000 3 "----------------#-")))
    (* amp)
    (out [0 1])))
 
@@ -107,7 +107,7 @@
   (doseq [pad @p-s]
     (ctl pad key arg)))
 (c-pads :ffreql (fader 200 17000 3 "-------#-------"))
-(c-pads :ffreqh (fader 200 17000 3 "-----#---------"))
+(c-pads :ffreqh (fader 200 17000 3 "----#----------"))
 (c-pads :drive (fader 1 20 "----------#-------"))
 (c-pads :clip (fader 0 1 "-------------#----"))
 (c-pads :amp (fader 0 1 "----#-------------"))
@@ -140,9 +140,9 @@
 
 (def b (buzz))
 (ctl b :gate 1)
-(ctl b :hfreq (fader 300 17000 3 "--------------#---"))
-(ctl b :lfreq (fader 300 17000 3 "-----------------#"))
-(ctl b :oamp (fader 0 1 3 "--------#---------"))
+(ctl b :hfreq (fader 300 17000 3 "-#----------------"))
+(ctl b :lfreq (fader 300 17000 3 "----------------#-"))
+(ctl b :oamp (fader 0 1 3 "--------------#---"))
 (ctl b :gate 0)
 (defn buzz-on []
   (do
@@ -156,10 +156,12 @@
 (defonce gen (atom nil))
 (reset! gen
         [
-         ;; [:pattern [(c 4 [1 2 0 1]) 2 [1 (i 0 1) (c 0 1) 1] [2 [0 1]]] #(do (viz/reset-animation!) (kick))]
-         ;; [:hold 1 [1] #(do (noise-on) (play-kick)) #'noise-off]
-         ;; [:pattern [(r 16 (c 1 2))] hihat]
+         [:pattern [[1 0 0 1] [0 1] [0 1] [0 1 0 1] [0 1] 0 2 0] #(do (viz/reset-animation!) (kick))]
+         [:hold 16 [1 1 0 1 [0 1/2] 1 [0 1/2] 1 ] #'noise-on #'noise-off]
+         ;; [:hold 8 [(i 2 0) 0 0 0 1 0 0 0 ] #'buzz-on #'buzz-off]
+         [:pattern [(r 32 (c 1 1))] hihat]
          ;; [:hold 4 [3] play-pad stop-pad]
          ])
 
 (comment (run-sequencer 70 4 gen))
+

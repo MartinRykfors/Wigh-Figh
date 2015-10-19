@@ -118,7 +118,7 @@ vec3 grid(vec3 dir, bool vert){
     p -= 0.5;
     float f = h2 < 0.5 ? smoothstep(0.6, 0.0,length(p))*9. : 1.;
     h = h < h2/1.2 + 0.1 && vert ? 1. : 0.;
-    vec3 acc = hsv2rgb(vec3(h2/1.-.3,.9,0.9))*h*band*3.*f;
+    vec3 acc = hsv2rgb(vec3(h2/0.3-.3,.4,0.9))*h*band*3.*f;
 
     return acc*pow(abs(dir.z),.5);
 }
