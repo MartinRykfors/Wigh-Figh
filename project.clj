@@ -3,4 +3,4 @@
   :url "http://example.com/FIXME"
   :license {:name "Gnu General Public License version 3"
             :url "http://www.gnu.org/copyleft/gpl.html"}
-  :dependencies [[org.clojure/clojure "1.6.0"][overtone "0.9.1"][quil "2.2.4"]])
+  :dependencies [[org.clojure/clojure "1.7.0"][overtone "0.10.1"][quil "2.2.4"]])

@@ -11,10 +11,10 @@
     (let [env (env-gen (env-perc 0 time))]
       (* env (sin-osc (lin-lin env 0 1 end-freq start-freq))))))
 
-(defsynth kick [amp 0.5]
-  (let [sig (->> [[0.01 3000 200]
-                  [0.3 170 70]
-                  [0.6 80 20]]
+(defsynth kick [amp 0.7]
+  (let [sig (->> [[0.01 5000 200]
+                  [0.2 230 70]
+                  [0.8 90 20]]
                  (map #(apply chirp %))
                  (mix)
                  (* amp))
@@ -38,29 +38,29 @@
      (out [0 1]))))
 
 (defn play-chord []
-  (doseq [note (chord :c3 :minor)]
+  (doseq [note (filter (fn [x] (< (rand-int 10) 5)) (take 6 (concat (chord :c3 :minor) (chord :c4 :minor))))]
     (fm
      ;:attack 0.1
-     :decay1 (fader 0 2 "--#---------------")
-     :decay2 (fader 0 2 "------#-----------")
-     :decay3 (fader 0 2 "------#-----------")
-     :ffreql (fader 300 17000 3 "----------#-------")
-     :index1 (fader 0 10 "---#--------------")
-     :index2 (fader 0 10 "----------------#-")
+     :decay1 (fader 0 2 "-----#------------")
+     :decay2 (fader 0 2 "--------#---------")
+     :decay3 (fader 0 2 "------------#-----")
+     :ffreql (fader 300 17000 3 "-------------#----")
+     :index1 (fader 0 10 "------------#-----")
+     :index2 (fader 0 10 "--------#---------")
      :mult1 (+ 2 (rand-int 3))
-     :mult2 (+ 3 (rand-int 5))
+     :mult2 (+ 2 (rand-int 3))
      :note note)))
 
 (defn snare []
   (fm
      :attack 0
-     :decay1 (fader 0 2 "----#-------------")
-     :decay2 (fader 0 2 "-----------#------")
-     :decay3 (fader 0 2 "-----#------------")
-     :ffreql (fader 300 17000 3 "------------#-----")
-     :ffreqh (fader 300 17000 3 "----#-------------")
+     :decay1 (fader 0 2 "--#---------------")
+     :decay2 (fader 0 2 "----------------#-")
+     :decay3 (fader 0 2 "-----------------#")
+     :ffreql (fader 300 17000 3 "---------------#--")
+     :ffreqh (fader 300 17000 3 "#-----------------")
      :index1 (fader 0 10 "-----------------#")
-     :index2 (fader 0 10 "---------------#--")
+     :index2 (fader 0 10 "-----------------#")
      :mult1 20.23
      :mult2 50.32
      ))
@@ -68,8 +68,8 @@
 (defn hihat []
   (fm
      :attack 0
-     :decay1 (fader 0 2 "-#----------------")
-     :decay2 (fader 0 2 "--------------#---")
+     :decay1 (fader 0.1 0.4 "#-----------------")
+     :decay2 (fader 0 2 "---------------#--")
      :decay3 (fader 0 2 "----------#-------")
      :ffreql (fader 300 17000 3 "----------------#-")
      :ffreqh (fader 300 17000 3 "------------#-----")
@@ -83,9 +83,11 @@
 
 (reset! gen
         [
-         [(pattern [(i [1 (c 3 [1 0 0 (c 1 2)])] (c 3 [1 (i 0 2) 0 (i 2 1)])) (i [1 0 0 1] [2 [0 1]]) (i 3 [2 (c 0 2)]) (i 1 [1 1] 1 (c [1 3] [0 1 1 2]))]) #(do (play-chord) (transition-state!) (kick))]
-         [(pattern [[(i 2 0) 1 1 2] [0 1 1 2] [0 1 1 2] [2 1 1 2]]) #(do (hihat))]
-         [(pattern [(r 3 [0 1]) (c 6 [2 4] [4 2] [1 [2 1]] )]) #(do (snare))]
+         [:pattern [0]
+          #(do (play-chord) (transition-state!) ;; (kick)
+               )]
+         ;; [:pattern [[(c 0 1 2) 1 1 2] [(c 2 0 1) 1 1 2] [(c 2 0 1) 1 1 2] [(c 0 2) 1 1 2]] #(do (hihat))]
+         ;; [:pattern [[0 1] [0 1] [0 1] (c [0 2] [1 [2 1]])] #(do (snare))]
          ])
 
 (sequencer (+ 1000 (now)) 0 3000 gen )
