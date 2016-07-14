@@ -15,14 +15,19 @@
 (defn- merge-patterns [first second]
   (sort (seq (clojure.set/union (set first) (set second)))))
 
-(defn express [{expression-keys :expression-keys} {expressions :expressions} num-steps]
-  (nth (reduce (fn [[index total-map] exp-key]
-                 (if (= 0 exp-key)
-                   [(inc index) total-map]
-                   (let [es (nth expressions (dec exp-key))
-                         local-res (reduce
-                                    (fn [acc {key :key pattern :pattern}]
-                                      (let [shifted-pattern (map #(+ index %) pattern)]
-                                        (assoc acc key shifted-pattern))) {} (:tracks es))
-                         merged (merge-with merge-patterns local-res total-map)]
-                     [(inc index) merged]))) [0 {}] expression-keys) 1))
+(defn- expand-tracks [tracks shift]
+  (reduce
+   (fn [acc {key :key pattern :pattern}]
+     (let [shifted-pattern (map #(+ shift %) pattern)]
+       (assoc acc key shifted-pattern))) {} tracks))
+
+(defn express [{expression-keys :expression-keys} {expressions :expressions}]
+  (first (reduce (fn [[total-pattern index] exp-key]
+                   (if (= 0 exp-key)
+                     [total-pattern (inc index)]
+                     (-> (:tracks (nth expressions (dec exp-key)))
+                         (expand-tracks index)
+                         ((partial merge-with merge-patterns total-pattern))
+                         ((fn [x] [x (inc index)])))))
+                 [{} 0] expression-keys)))
+

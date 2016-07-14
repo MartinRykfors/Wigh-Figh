@@ -41,27 +41,27 @@
         expression2 (->expression [(->track [1 2] :kick) (->track [2] :snare)])
         palette (->palette [expression1 expression2] {:kick :kick-val :snare :snare-val})]
     (testing "zero-only kernel yields empty total expression"
-      (are [expected kernel] (= expected (express kernel palette 16))
+      (are [expected kernel] (= expected (express kernel palette))
         {}
         (->kernel [0])
         ))
     (testing "single-unit kernel will replicate the expression"
-      (are [expected kernel] (= expected (express kernel {:expressions [expression1]} 2))
+      (are [expected kernel] (= expected (express kernel {:expressions [expression1]}))
         {:kick [0 1] :snare [0]}
         (->kernel [1])
         ))
     (testing "the kernel can shift the expression"
-      (are [expected kernel] (= expected (express kernel {:expressions [expression1]} 2))
+      (are [expected kernel] (= expected (express kernel {:expressions [expression1]}))
         {:kick [1 2] :snare [1]}
         (->kernel [0 1])
         ))
     (testing "it chooses which expression to insert based on the kernel"
-      (are [expected kernel] (= expected (express kernel palette 2))
+      (are [expected kernel] (= expected (express kernel palette))
         {:kick [1 2] :snare [2]}
         (->kernel [2])
         ))
     (testing "it merges multiple expressions"
-      (are [expected kernel] (= expected (express kernel palette 2))
+      (are [expected kernel] (= expected (express kernel palette))
         {:kick [0 1 2 3] :snare [0 3]}
         (->kernel [1 2])
         ))))
