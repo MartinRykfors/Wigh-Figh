@@ -1,4 +1,5 @@
-(ns wigh-figh.pattern)
+(ns wigh-figh.pattern
+  (:require [wigh-figh.scheduling :as s]))
 
 (defprotocol Length-unit
   (note-lengths [this normal-factor start duration]))
@@ -12,8 +13,18 @@
 (defn pattern [pat]
   (fn [measure-index] (trigger-times (expand pat measure-index) 0 1)))
 
+(defmethod s/schedule :pattern [type measure-index & rest]
+  (let [[p trigger-f] rest
+        trigger-times ((pattern p) measure-index)]
+    (map (fn [time] [time trigger-f]) trigger-times)))
+
 (defn lengths [pat normal-factor]
   (fn [measure-index] (note-lengths (expand pat measure-index) normal-factor 0 1)))
+
+(defmethod s/schedule :hold [type measure-index & rest]
+  (let [[normal-factor pattern on-f off-f] rest
+        notes ((lengths pattern normal-factor) measure-index)]
+    (mapcat (fn [note] [[(:start note) on-f] [(:end note) off-f]]) notes)))
 
 (extend-type java.lang.Double
   Length-unit
