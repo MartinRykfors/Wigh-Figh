@@ -31,3 +31,10 @@
                          ((fn [x] [x (inc index)])))))
                  [{} 0] expression-keys)))
 
+(defn make-palette [action-map & expressions]
+  (let [e-recs (->> expressions
+                    (map (fn [expression]
+                           (->> expression
+                                (map (fn [[pattern key]] (->track pattern key)))
+                                (->expression)))))]
+    (->palette e-recs action-map)))

@@ -35,7 +35,7 @@
                       (empty? (:pattern track))
                       (< (apply max (:pattern track)) length)))
          (:tracks (generate-expression [:kick :snare :hihat] length)))
-      1 2 3 4 8))
+        1 2 3 4 8))
 
   (let [expression1 (->expression [(->track [0 1] :kick) (->track [0] :snare)])
         expression2 (->expression [(->track [1 2] :kick) (->track [2] :snare)])
@@ -64,4 +64,36 @@
       (are [expected kernel] (= expected (express kernel palette))
         {:kick [0 1 2 3] :snare [0 3]}
         (->kernel [1 2])
-        ))))
+        )))
+  (testing "palette shorthand works"
+    (are [expected actual] (= expected actual)
+      (->palette
+       [
+        (->expression
+         [
+          (->track [1 0 0 1] :kick)
+          (->track [0 1 0 1] :snare)
+          ])
+        (->expression
+         [
+          (->track [1 0 1 0] :kick)
+          (->track [1 1 1 0] :hihat)
+          ])]
+       {:kick :kick-function
+        :snare :snare-function
+        :hihat :hihat-function})
+
+      (make-palette
+       {:kick :kick-function
+        :snare :snare-function
+        :hihat :hihat-function}
+       [
+        [[1 0 0 1] :kick]
+        [[0 1 0 1] :snare]
+        ]
+       [
+        [[1 0 1 0] :kick]
+        [[1 1 1 0] :hihat]
+        ]
+       )
+      )))
