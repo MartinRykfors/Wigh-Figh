@@ -1,4 +1,5 @@
-(ns wigh-figh.expression)
+(ns wigh-figh.expression
+  (:require [clojure.set :as set]))
 
 (defrecord track [pattern key])
 (defrecord expression [tracks])
@@ -13,7 +14,7 @@
    (->expression)))
 
 (defn- merge-patterns [first second]
-  (sort (seq (clojure.set/union (set first) (set second)))))
+  (sort (seq (set/union (set first) (set second)))))
 
 (defn- expand-tracks [tracks shift]
   (reduce
