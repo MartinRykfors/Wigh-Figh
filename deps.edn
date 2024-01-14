@@ -1,0 +1,2 @@
+{:deps {overtone/overtone {:mvn/version "0.13.3177"}
+        quil/quil {:mvn/version "4.3.1323"} } }
